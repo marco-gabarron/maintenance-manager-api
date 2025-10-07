@@ -1,5 +1,11 @@
-const express = require('express')
+import 'dotenv/config.js'
+import express from 'express'
+
+// const express = require('express')
 // const bodyParser = require("body-parser");
+
+import { PostgresHelper } from './src/db/postgres/helper.js'
+
 const app = express()
 // const db = require("./queries");
 const port = 3000
@@ -11,8 +17,14 @@ const port = 3000
 //   })
 // );
 
-app.get('/', (request, response) => {
-    response.json({ info: 'Node.js, Express, and Postgres API' })
+app.use(express.json())
+
+app.get('/', async (request, response) => {
+    console.log(request.body)
+    console.log(request.header)
+    const results = await PostgresHelper.query('SELECT * FROM machine;')
+    response.send(JSON.stringify(results))
+    // response.json({ info: 'Node.js, Express, and Postgres API' })
 })
 
 // app.get("/customers", db.getUsers);
