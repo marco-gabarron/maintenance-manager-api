@@ -27,7 +27,7 @@ BEGIN
         CREATE TYPE machine_plant AS ENUM ('fixed', 'mobile');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'machine_service_frequency') THEN
-        CREATE TYPE machine_service_frequency AS ENUM ('1month', '3months', '6monsths', '9months');
+        CREATE TYPE machine_service_frequency AS ENUM ('1month', '3months', '6months', '9months');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'machine_status') THEN
         CREATE TYPE machine_status AS ENUM ('active', 'inactive(replaced)', 'inactive(scrapped)', 'inactive(breakdown)');
@@ -44,7 +44,7 @@ END $$;
 -- CREATE TYPE history_service_type AS ENUM ('pm', 'breakdown', 'service');
 
 CREATE TABLE IF NOT EXISTS history (
-    ID UUID PRIMARY KEY,
+    id UUID PRIMARY KEY,
     machine_id UUID REFERENCES machine(ID) ON DELETE CASCADE,
     date DATE NOT NULL,
     service_level history_service_level NOT NULL,
