@@ -8,6 +8,9 @@ export const pool = new Pool({
     database: process.env.POSTGRES_DB,
     password: process.env.POSTGRES_PASSWORD,
     port: process.env.POSTGRES_PORT,
+    ssl: {
+        require: true,
+    },
 })
 
 export const PostgresHelper = {
