@@ -13,8 +13,6 @@ export class CreateUserController {
                 'year',
                 'serial_number',
                 'service_frequency',
-                'hours',
-                'mileage',
                 'status',
             ]
 
