@@ -7,6 +7,7 @@ export class CreateUserController {
             //Validate inputs(Mandatory fields, email format, password strength)
             const requiredFields = [
                 'area_id',
+                'machine_type',
                 'model',
                 'plant',
                 'manufacturer',
