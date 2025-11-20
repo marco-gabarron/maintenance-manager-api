@@ -11,8 +11,6 @@ export class CreateHistoryController {
                 'service_level',
                 'description',
                 'service_type',
-                'hours_service',
-                'mileage_service',
                 'completed_by',
             ]
 
