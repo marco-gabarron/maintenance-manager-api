@@ -4,7 +4,7 @@ export class PostgresCreateHistoryRepository {
     async execute(createHistoryParams) {
         // create user in postgres
         await PostgresHelper.query(
-            'INSERT INTO history(ID, machine_id, date, service_level, description, service_type, hours_service, mileage_service, completed_by) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+            'INSERT INTO history(ID, machine_id, date, service_level, description, service_type, hours_service, mileage_service, completed_by, file_service_report) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
             [
                 createHistoryParams.ID,
                 createHistoryParams.machine_id,
@@ -15,6 +15,7 @@ export class PostgresCreateHistoryRepository {
                 createHistoryParams.hours_service,
                 createHistoryParams.mileage_service,
                 createHistoryParams.completed_by,
+                createHistoryParams.params.file_service_report,
             ],
         )
 

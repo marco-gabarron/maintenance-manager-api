@@ -1,6 +1,6 @@
 import 'dotenv/config.js'
 import express from 'express'
-// import multer from 'multer'
+import multer from 'multer'
 
 import { CreateUserController } from './src/controllers/create-user.js'
 import { UpdateMachineController } from './src/controllers/update-machine.js'
@@ -18,17 +18,29 @@ import { CreateHistoryController } from './src/controllers/create-history.js'
 const app = express()
 app.use(cors())
 
-// const storage = multer.diskStorage({
-//     destination: function (req, file, cb) {
-//         cb(null, './media-folder/upload/')
-//     },
-//     filename: function (req, file, cb) {
-//         const uniquePrefix = Date.now() + '-' + Math.round(Math.random() * 1e9)
-//         cb(null, uniquePrefix + '-' + file.originalname)
-//     },
-// })
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        if (req.originalUrl.includes('/api/create/machine')) {
+            cb(null, './media-folder/upload/service-agreement') // Ensure this directory exists
+        } else if (req.originalUrl.includes('/api/create/history')) {
+            cb(null, './media-folder/upload/service-report') // Ensure this directory exists
+        }
+    },
+    filename: function (req, file, cb) {
+        const uniquePrefix = Date.now() + '-' + Math.round(Math.random() * 1e9)
+        cb(null, uniquePrefix + '-' + file.originalname)
+    },
+})
 
-// const upload = multer({ storage })
+const upload = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+        if (!file) {
+            return cb(null, false) // Don't save if no file
+        }
+        cb(null, true)
+    },
+})
 
 app.use(express.json())
 
@@ -40,21 +52,6 @@ const queryArchived =
 
 const queryBrakeTest =
     "SELECT A.title AS area, B.machine_type, B.model, B.manufacturer, B.year, B.hours, B.mileage, B.serial_number FROM area AS A INNER JOIN machine AS B ON A.id = B.area_id WHERE B.brake_test = true  AND B.status = 'active' ORDER BY A.title, B.machine_type, B.model;"
-// app.post(
-//     '/api/create/machine',
-//     upload.single('file'), // multer saves the file first
-//     async (request, response) => {
-//         // attach filename to the body so controller can see it
-//         if (request.file) {
-//             request.body.params = request.body.params || {}
-//             request.body.params.file_service_name = request.file.filename
-//         }
-
-//         const createUserController = new CreateUserController()
-//         const { statusCode, body } = await createUserController.execute(request)
-//         response.status(statusCode).send(body)
-//     },
-// )
 
 const createWorkbook = (headerText) => {
     const workbook = new xl.Workbook()
@@ -226,18 +223,45 @@ app.get('/maintenance/download/spreadsheet', async (request, response) => {
         })
 })
 
-//The one working
-app.post('/api/create/machine', async (request, response) => {
-    const createUserController = new CreateUserController()
-    const { statusCode, body } = await createUserController.execute(request)
-    response.status(statusCode).send(body)
-})
+app.post(
+    '/api/create/machine',
+    upload.single('file'), // multer saves the file first
+    async (request, response) => {
+        // attach filename to the body so controller can see it
+        if (request.file) {
+            request.body.params = request.body.params || {}
+            request.body.params.file_service_agreement = request.file.filename
+        } else {
+            request.body.params = request.body.params || {}
+            request.body.params.file_service_agreement = null
+        }
 
-app.post('/api/create/history', async (request, response) => {
-    const createHistoryController = new CreateHistoryController()
-    const { statusCode, body } = await createHistoryController.execute(request)
-    response.status(statusCode).send(body)
-})
+        const createUserController = new CreateUserController()
+        const { statusCode, body } = await createUserController.execute(request)
+        response.status(statusCode).send(body)
+    },
+)
+
+//History create endpoint
+app.post(
+    '/api/create/history',
+    upload.single('file'),
+    async (request, response) => {
+        // attach filename to the body so controller can see it
+        if (request.file) {
+            request.body.params = request.body.params || {}
+            request.body.params.file_service_report = request.file.filename
+        } else {
+            request.body.params = request.body.params || {}
+            request.body.params.file_service_report = null
+        }
+
+        const createHistoryController = new CreateHistoryController()
+        const { statusCode, body } =
+            await createHistoryController.execute(request)
+        response.status(statusCode).send(body)
+    },
+)
 
 //Machine update endpoint
 app.patch('/api/update/machine/:machineId', async (request, response) => {
@@ -345,24 +369,26 @@ app.get(
     },
 )
 
-// app.post('/api/uploads', upload.single('file'), (request, response) => {
-//     response.json(request.file)
-//     console.log(request.file.filename)
-//     //try the below next
-//     // response.send(response.json(request.file))
-// })
-
 //Get PDF attachment
-app.get('/api/downloads', (req, res) => {
+app.get('/api/downloads/:fileName', (req, res) => {
     // response.send('It gets here')
-    fs.readFile('./media-folder/upload/Precast Sizes.pdf', (err, data) => {
+    let path = ''
+
+    if (req.query.originalSource === 'service-agreement') {
+        path = './media-folder/upload/service-agreement/' + req.params.fileName
+    } else if (req.query.originalSource === 'service-report') {
+        path = './media-folder/upload/service-report/' + req.params.fileName
+    }
+
+    const filename = req.params.fileName
+    fs.readFile(path, (err, data) => {
         if (err) {
             res.writeHead(500, { 'content-type': 'text/plain' })
             res.end('Error reading file')
         } else {
             res.writeHead(200, {
                 'content-type': 'application/pdf',
-                'content-disposition': 'inline ; filename=Precast Sizes.pdf',
+                'content-disposition': 'inline ; filename=' + filename,
             })
             res.end(data)
         }
