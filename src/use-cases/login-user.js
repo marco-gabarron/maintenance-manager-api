@@ -1,14 +1,33 @@
 export class LoginUserUseCase {
+    constructor(
+        getUserByEmail,
+        passwordComparatorAdapter,
+        tokensGeneratorAdapter,
+    ) {
+        this.getUserByEmail = getUserByEmail
+        this.passwordComparatorAdapter = passwordComparatorAdapter
+        this.tokensGeneratorAdapter = tokensGeneratorAdapter
+    }
     async execute(params) {
-        //Implement login logic here (e.g., verify credentials, generate token)
-        //This is a placeholder implementation and should be replaced with actual logic
-        if (
-            params.email === 'dkelly@hanlonconcrete.ie' &&
-            params.password === '123456'
-        ) {
-            return { token: 'fake-jwt-token' }
-        } else {
+        // check if email exists and password is correct
+        const user = await this.getUserByEmail.execute(params.email)
+
+        if (!user) {
             throw new Error('Invalid credentials')
+        }
+
+        const isPasswordValid = await this.passwordComparatorAdapter.execute(
+            params.password,
+            user.password,
+        )
+
+        if (!isPasswordValid) {
+            throw new Error('Invalid credentials')
+        }
+
+        return {
+            ...user,
+            tokens: this.tokensGeneratorAdapter.execute(user.id),
         }
     }
 }

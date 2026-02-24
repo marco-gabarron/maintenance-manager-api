@@ -14,9 +14,21 @@ import xl from 'excel4node'
 
 import { PostgresHelper } from './src/db/postgres/helper.js'
 import { CreateHistoryController } from './src/controllers/create-history.js'
+import { LoginUserController } from './src/controllers/login-user.js'
+import { getUserByEmail } from './src/adapters/getUserByEmail.js'
+import { PasswordComparatorAdapter } from './src/adapters/password-comparator.js'
+import { TokensGeneratorAdapter } from './src/adapters/tokens-generator.js'
+import { LoginUserUseCase } from './src/use-cases/login-user.js'
+import { auth } from './src/middlewares/auth.js'
+import { RefreshTokenController } from './src/controllers/refresh-token.js'
+import { RefreshTokenUseCase } from './src/use-cases/refresh-token.js'
+import { TokenVerifierAdapter } from './src/adapters/token-verifier.js'
+import { GetUserByIdController } from './src/controllers/get-user-by-id.js'
+// import { PasswordHasherAdapter } from './src/adapters/password-hasher.js'
 
 const app = express()
 app.use(cors())
+app.use(auth) // Apply auth middleware globally
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -263,6 +275,21 @@ app.post(
     },
 )
 
+// app.get('/create-user', async () => {
+//     const passwordHasherAdapter = new PasswordHasherAdapter()
+//     const hashedPassword = await passwordHasherAdapter.execute('JoxerDog')
+//     console.log(hashedPassword)
+//     await PostgresHelper.query(
+//         'INSERT INTO users(ID, name, email, password) VALUES($1, $2, $3, $4) RETURNING *',
+//         [
+//             '89d73c1b-8161-48e5-9034-3f93da017fd4',
+//             'David',
+//             'dkelly@hanlonconcrete.ie',
+//             hashedPassword,
+//         ],
+//     )
+// })
+
 //Machine update endpoint
 app.patch('/api/update/machine/:machineId', async (request, response) => {
     const updateMachineController = new UpdateMachineController()
@@ -368,6 +395,55 @@ app.get(
         response.send(JSON.stringify(results))
     },
 )
+
+app.post('/login', async (request, response) => {
+    const getUserByEmailAdapter = new getUserByEmail()
+    const passwordComparatorAdapter = new PasswordComparatorAdapter()
+    const tokensGeneratorAdapter = new TokensGeneratorAdapter()
+
+    const loginUserUseCase = new LoginUserUseCase(
+        getUserByEmailAdapter,
+        passwordComparatorAdapter,
+        tokensGeneratorAdapter,
+    )
+    const loginUserController = new LoginUserController(loginUserUseCase)
+    const { statusCode, body } = await loginUserController.execute(request)
+    response.status(statusCode).send(body)
+})
+
+app.post('/refresh-token', async (request, response) => {
+    const tokensGeneratorAdapter = new TokensGeneratorAdapter()
+    const tokenVerifierAdapter = new TokenVerifierAdapter()
+    const refreshTokenUseCase = new RefreshTokenUseCase(
+        tokensGeneratorAdapter,
+        tokenVerifierAdapter,
+    )
+    const refreshTokenController = new RefreshTokenController(
+        refreshTokenUseCase,
+    )
+    const { statusCode, body } = await refreshTokenController.execute(request)
+    response.status(statusCode).send(body)
+})
+
+app.get('/me', async (request, response) => {
+    const user = await PostgresHelper.query(
+        'SELECT * FROM users WHERE id = $1',
+        [request.userId],
+    )
+
+    const getUserByIdController = new GetUserByIdController()
+
+    const { statusCode, body } = await getUserByIdController.execute(user[0])
+
+    // const { statusCode, body } = await getUserByIdController.execute({
+    //     ...request,
+    //     params: {
+    //         userId: request.userId,
+    //     },
+    // })
+
+    response.status(statusCode).send(body)
+})
 
 //Get PDF attachment
 app.get('/api/downloads/:fileName', (req, res) => {

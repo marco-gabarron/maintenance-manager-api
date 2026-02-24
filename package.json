@@ -21,10 +21,12 @@
         "dotenv": "^17.2.3",
         "excel4node": "^1.8.2",
         "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2",
         "multer": "^2.0.2",
         "pg": "^8.16.3",
         "prettier": "^3.6.2",
-        "uuid": "^13.0.0"
+        "uuid": "^13.0.0",
+        "validator": "^13.11.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.36.0",
