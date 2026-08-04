@@ -1,6 +1,7 @@
 import 'dotenv/config.js'
 import express from 'express'
 import multer from 'multer'
+import uploadConfig from './src/config/multer.js'
 
 import { CreateUserController } from './src/controllers/create-user.js'
 import { UpdateMachineController } from './src/controllers/update-machine.js'
@@ -30,29 +31,31 @@ const app = express()
 app.use(cors())
 app.use(auth) // Apply auth middleware globally
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        if (req.originalUrl.includes('/api/create/machine')) {
-            cb(null, './media-folder/upload/service-agreement') // Ensure this directory exists
-        } else if (req.originalUrl.includes('/api/create/history')) {
-            cb(null, './media-folder/upload/service-report') // Ensure this directory exists
-        }
-    },
-    filename: function (req, file, cb) {
-        const uniquePrefix = Date.now() + '-' + Math.round(Math.random() * 1e9)
-        cb(null, uniquePrefix + '-' + file.originalname)
-    },
-})
+const upload = multer(uploadConfig)
 
-const upload = multer({
-    storage,
-    fileFilter: (req, file, cb) => {
-        if (!file) {
-            return cb(null, false) // Don't save if no file
-        }
-        cb(null, true)
-    },
-})
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         if (req.originalUrl.includes('/api/create/machine')) {
+//             cb(null, './media-folder/upload/service-agreement') // Ensure this directory exists
+//         } else if (req.originalUrl.includes('/api/create/history')) {
+//             cb(null, './media-folder/upload/service-report') // Ensure this directory exists
+//         }
+//     },
+//     filename: function (req, file, cb) {
+//         const uniquePrefix = Date.now() + '-' + Math.round(Math.random() * 1e9)
+//         cb(null, uniquePrefix + '-' + file.originalname)
+//     },
+// })
+
+// const upload = multer({
+//     storage,
+//     fileFilter: (req, file, cb) => {
+//         if (!file) {
+//             return cb(null, false) // Don't save if no file
+//         }
+//         cb(null, true)
+//     },
+// })
 
 app.use(express.json())
 
@@ -255,25 +258,33 @@ app.post(
 )
 
 //History create endpoint
-app.post(
-    '/api/create/history',
-    upload.single('file'),
-    async (request, response) => {
-        // attach filename to the body so controller can see it
-        if (request.file) {
-            request.body.params = request.body.params || {}
-            request.body.params.file_service_report = request.file.filename
-        } else {
-            request.body.params = request.body.params || {}
-            request.body.params.file_service_report = null
-        }
+app.post('/api/create/history', upload.any(), async (request, response) => {
+    const createHistoryController = new CreateHistoryController()
+    const { statusCode, body: responseBody } =
+        await createHistoryController.execute(request)
+    response.status(statusCode).send(responseBody)
+})
 
-        const createHistoryController = new CreateHistoryController()
-        const { statusCode, body } =
-            await createHistoryController.execute(request)
-        response.status(statusCode).send(body)
-    },
-)
+//Copy for PDF file version
+// app.post(
+//     '/api/create/history',
+//     upload.single('file'),
+//     async (request, response) => {
+//         // attach filename to the body so controller can see it
+//         if (request.file) {
+//             request.body.params = request.body.params || {}
+//             request.body.params.file_service_report = request.file.filename
+//         } else {
+//             request.body.params = request.body.params || {}
+//             request.body.params.file_service_report = null
+//         }
+
+//         const createHistoryController = new CreateHistoryController()
+//         const { statusCode, body } =
+//             await createHistoryController.execute(request)
+//         response.status(statusCode).send(body)
+//     },
+// )
 
 // app.get('/create-user', async () => {
 //     const passwordHasherAdapter = new PasswordHasherAdapter()
@@ -377,11 +388,17 @@ app.get('/maintenance/machine/:id', async (request, response) => {
 
 //Get history by ID
 app.get('/maintenance/history/:id', async (request, response) => {
-    const results = await PostgresHelper.query(
+    const history = await PostgresHelper.query(
+        // 'SELECT history.*, service_report.* FROM history INNER JOIN service_report ON history.id = service_report.history_id WHERE history.id = $1 ORDER BY history.date DESC',
         'SELECT * FROM history WHERE id = $1',
         [request.params.id],
     )
-    response.send(JSON.stringify(results[0]))
+    const files = await PostgresHelper.query(
+        'SELECT * FROM service_report WHERE history_id = $1',
+        [request.params.id],
+    )
+    history[0].files = files
+    response.send(JSON.stringify(history[0]))
 })
 
 //Get histories by machine ID
@@ -389,7 +406,8 @@ app.get(
     '/maintenance/machine/histories/:machineId',
     async (request, response) => {
         const results = await PostgresHelper.query(
-            'SELECT * FROM history WHERE machine_id = $1',
+            //'SELECT history.*, service_report.* FROM history INNER JOIN service_report ON history.id = service_report.history_id WHERE history.machine_id = $1 ORDER BY history.date DESC',
+            'SELECT * FROM history WHERE machine_id = $1 ORDER BY date DESC',
             [request.params.machineId],
         )
         response.send(JSON.stringify(results))

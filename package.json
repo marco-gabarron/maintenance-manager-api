@@ -17,6 +17,7 @@
     "license": "MIT",
     "dependencies": {
         "bcrypt": "^6.0.0",
+        "cloudinary": "^2.10.0",
         "cors": "^2.8.5",
         "dotenv": "^17.2.3",
         "excel4node": "^1.8.2",

@@ -3,7 +3,24 @@ import { CreateHistoryUseCase } from '../use-cases/create-history.js'
 export class CreateHistoryController {
     async execute(httpRequest) {
         try {
-            const params = httpRequest.body
+            const body = httpRequest.body || {}
+            const params = body.params
+                ? { ...body, ...body.params }
+                : { ...body }
+
+            // params.file = params.file || httpRequest.file || null
+            // params.imageBase64 = params.imageBase64 || params.image || null
+            // params.file_service_report =
+            //     params.file_service_report || params.fileServiceReport || null
+
+            // if (
+            //     !params.file &&
+            //     !params.imageBase64 &&
+            //     !params.file_service_report
+            // ) {
+            //     throw new Error('Image required!')
+            // }
+
             //Validate inputs(Mandatory fields, email format, password strength)
             const requiredFields = [
                 'machine_id',
@@ -23,7 +40,11 @@ export class CreateHistoryController {
                 }
             }
 
-            //Call use case to create user when inputs are valid
+            // console.log('=========', params)
+            // console.log('================================', httpRequest.files)
+
+            params.files = httpRequest.files
+            // Call use case to create user when inputs are valid
             const createdHistoryUseCase = new CreateHistoryUseCase()
 
             const createdHistory = await createdHistoryUseCase.execute(params)
