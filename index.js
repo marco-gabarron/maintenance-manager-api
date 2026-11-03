@@ -288,14 +288,13 @@ app.post('/api/create/history', upload.any(), async (request, response) => {
 
 // app.get('/create-user', async () => {
 //     const passwordHasherAdapter = new PasswordHasherAdapter()
-//     const hashedPassword = await passwordHasherAdapter.execute('JoxerDog')
-//     console.log(hashedPassword)
+//     const hashedPassword = await passwordHasherAdapter.execute('Yard1234!')
 //     await PostgresHelper.query(
 //         'INSERT INTO users(ID, name, email, password) VALUES($1, $2, $3, $4) RETURNING *',
 //         [
-//             '89d73c1b-8161-48e5-9034-3f93da017fd4',
-//             'David',
-//             'dkelly@hanlonconcrete.ie',
+//             'a74da0d7-6152-4e47-bc6f-6df1c7cee267',
+//             'Yard Operator',
+//             'yard@hanlonconcrete.ie',
 //             hashedPassword,
 //         ],
 //     )
@@ -323,6 +322,20 @@ app.get('/maintenance/areas', async (request, response) => {
     response.send(JSON.stringify(results))
     // response.json({ info: 'Node.js, Express, and Postgres API' })
 })
+
+app.get(
+    '/maintenance/checklist/questions/:checklistSetId',
+    async (request, response) => {
+        const checklistSetId = parseInt(request.params.checklistSetId)
+        const results = await PostgresHelper.query(
+            '  SELECT A.text, A.id FROM questions_checklist as A INNER JOIN checklistset_questions as B ON A.id = B.question_id WHERE B.checklist_set_id = $1 ORDER BY A.id ASC;',
+            // 'SELECT * from checklistset_questions WHERE checklist_set_id = $1 ORDER BY question_id ASC',
+            [checklistSetId],
+        )
+        response.send(JSON.stringify(results))
+        // response.json({ info: 'Node.js, Express, and Postgres API' })
+    },
+)
 
 //FILTERED ROUTES
 //get all the machines for summary
