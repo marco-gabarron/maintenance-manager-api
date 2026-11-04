@@ -25,6 +25,7 @@ import { RefreshTokenController } from './src/controllers/refresh-token.js'
 import { RefreshTokenUseCase } from './src/use-cases/refresh-token.js'
 import { TokenVerifierAdapter } from './src/adapters/token-verifier.js'
 import { GetUserByIdController } from './src/controllers/get-user-by-id.js'
+import { CreateChecklistController } from './src/controllers/create-checklist.js'
 // import { PasswordHasherAdapter } from './src/adapters/password-hasher.js'
 
 const app = express()
@@ -262,6 +263,14 @@ app.post('/api/create/history', upload.any(), async (request, response) => {
     const createHistoryController = new CreateHistoryController()
     const { statusCode, body: responseBody } =
         await createHistoryController.execute(request)
+    response.status(statusCode).send(responseBody)
+})
+
+//Checklist create endpoint
+app.post('/api/create/checklist', upload.any(), async (request, response) => {
+    const createChecklistController = new CreateChecklistController()
+    const { statusCode, body: responseBody } =
+        await createChecklistController.execute(request)
     response.status(statusCode).send(responseBody)
 })
 

@@ -40,9 +40,6 @@ export class CreateHistoryController {
                 }
             }
 
-            // console.log('=========', params)
-            // console.log('================================', httpRequest.files)
-
             params.files = httpRequest.files
             // Call use case to create user when inputs are valid
             const createdHistoryUseCase = new CreateHistoryUseCase()
