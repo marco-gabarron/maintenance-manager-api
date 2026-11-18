@@ -5,7 +5,7 @@ export class PostgresCreateChecklistRepository {
     async execute(createChecklistParams) {
         // create user in postgres
         await PostgresHelper.query(
-            'INSERT INTO checklist(id, machine_id, comments, date, completed, defective, closed, corrective_action) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            'INSERT INTO checklist(id, machine_id, comments, date, completed, defective, open, completed_by) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
             [
                 createChecklistParams.id,
                 createChecklistParams.machine_id,
@@ -13,8 +13,8 @@ export class PostgresCreateChecklistRepository {
                 createChecklistParams.date,
                 createChecklistParams.completed,
                 createChecklistParams.defective,
-                createChecklistParams.closed,
-                createChecklistParams.corrective_action,
+                createChecklistParams.open,
+                createChecklistParams.completed_by,
             ],
         )
 
