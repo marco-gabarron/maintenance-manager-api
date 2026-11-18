@@ -408,6 +408,16 @@ app.get('/maintenance/machine/:id', async (request, response) => {
     response.send(JSON.stringify(results[0]))
 })
 
+app.get('/maintenance/checklist/:machineId', async (request, response) => {
+    //SELECT * FROM machine AS A INNER JOIN area AS B ON A.area_id = B.id WHERE id = $1;
+    // SELECT A.title AS area, B.service_frequency, B.id, B.plant, B.machine_type, B.model, B.manufacturer, B.year, B.hours, B.mileage, B.serial_number FROM area AS A INNER JOIN machine AS B ON A.id = B.area_id WHERE B.status <> 'active' ORDER BY A.title, B.machine_type, B.model;
+    const results = await PostgresHelper.query(
+        'SELECT A.*, json_agg(B) AS questionnaire FROM checklist as A INNER JOIN questionnaire_checklist as B on A.id = B.checklist_id WHERE A.machine_id = $1 GROUP BY A.id;',
+        [request.params.machineId],
+    )
+    response.send(JSON.stringify(results[0]))
+})
+
 //Get history by ID
 app.get('/maintenance/history/:id', async (request, response) => {
     const history = await PostgresHelper.query(
