@@ -26,20 +26,21 @@ export class PostgresCreateChecklistRepository {
                 const questionnaireId = uuidv4()
                 const questionId = parseInt(questionnaire.question_id)
                 await PostgresHelper.query(
-                    'INSERT INTO questionnaire_checklist(id, question_id, value, checklist_id) VALUES($1, $2, $3, $4)',
+                    'INSERT INTO questionnaire_checklist(id, question_id, value, checklist_id, text) VALUES($1, $2, $3, $4, $5)',
                     [
                         questionnaireId,
                         questionId,
                         questionnaire.value,
                         createChecklistParams.id,
+                        questionnaire.text,
                     ],
                 )
             }
         }
 
         const createdChecklist = await PostgresHelper.query(
-            'SELECT * FROM checklist WHERE id = $1',
-            [createChecklistParams.id],
+            'SELECT A.*, json_agg(B) AS questionnaire FROM checklist as A INNER JOIN questionnaire_checklist as B on A.id = B.checklist_id WHERE A.machine_id = $1 AND A.date = $2 GROUP BY A.id;',
+            [createChecklistParams.machine_id, createChecklistParams.date],
         )
         return createdChecklist[0]
     }
